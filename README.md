@@ -1,5 +1,7 @@
 # ai-disclosure-crosscheck
 
+[日本語版はこちら](./README.ja.md)
+
 A read-only, cross-repo linter that checks whether a server-side call to an
 external AI API (OpenAI, Anthropic, Gemini, Mistral, and others) is actually
 disclosed to the user — either in the client app's UI or in the public
