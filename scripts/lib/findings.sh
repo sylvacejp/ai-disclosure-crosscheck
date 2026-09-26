@@ -34,9 +34,15 @@ _json_escape() {
   local s="$1"
   s="${s//\\/\\\\}"
   s="${s//\"/\\\"}"
-  # Use printf/sed to turn literal newlines/tabs into escapes; message fields
-  # are already newline-free (see _esc_field), this also covers file paths.
-  s="$(printf '%s' "$s" | sed ':a;N;$!ba;s/\n/\\n/g;s/\t/\\t/g')"
+  # Turn literal newlines/tabs into escapes; message fields are already
+  # newline-free (see _esc_field), this also covers file paths.
+  # Bash parameter expansion instead of a sed N-command loop: BSD sed
+  # (macOS /usr/bin/sed) silently drops the whole line when `N` hits
+  # end-of-input on a string with no trailing newline (single-line input),
+  # unlike GNU sed — a real portability bug, not just a syntax error. Plain
+  # ${s//pat/repl} works identically on bash 3.2 (macOS default) and 4/5.
+  s="${s//$'\n'/\\n}"
+  s="${s//$'\t'/\\t}"
   printf '%s' "$s"
 }
 
