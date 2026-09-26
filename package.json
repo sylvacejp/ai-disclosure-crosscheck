@@ -1,0 +1,28 @@
+{
+  "name": "ai-disclosure-crosscheck",
+  "version": "0.1.0",
+  "description": "Cross-repo AI disclosure linter: cross-checks a server-side AI API call against client UI disclosure and public policy disclosure of the provider name, and reports PASS/WARN/FAIL where a single-repo, client-only scanner cannot.",
+  "license": "MIT",
+  "private": true,
+  "bin": {
+    "ai-disclosure-crosscheck": "bin/cli.js"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=14"
+  },
+  "scripts": {
+    "test": "node tests/run.js"
+  },
+  "keywords": [
+    "ai-disclosure",
+    "app-store",
+    "appstore-precheck",
+    "cli",
+    "linter"
+  ]
+}
