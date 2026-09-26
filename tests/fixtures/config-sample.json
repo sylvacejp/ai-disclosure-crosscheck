@@ -1,0 +1,5 @@
+{
+  "clientDir": "tests/fixtures/client-disclosed",
+  "serverDir": "tests/fixtures/server-openai",
+  "policyFile": "tests/fixtures/policy-disclosed.html"
+}
