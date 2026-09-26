@@ -147,17 +147,26 @@ trap 'rm -f "$FINDINGS_TMP"' EXIT
 load_precheck_ignore "."
 
 # --- signal A: server-side AI provider call detection ------------------------
+# A bare path-glob entry in .precheck-ignore (suppress.sh: path_is_excluded)
+# excludes that path from scanning entirely (spec 3-4 grammar, 3rd form).
+# Collect all matches per pattern (not just the first) and skip excluded
+# ones, so an excluded file doesn't shadow a legitimate hit elsewhere.
 AI_PROVIDER=""
 AI_SIG_FILE=""
 while IFS=$'\t' read -r ai_pat ai_name; do
   [[ -z "$ai_pat" || "$ai_pat" == \#* ]] && continue
   # shellcheck disable=SC2086
-  hit="$(grep -rlE "$ai_pat" "$SERVER_DIR" $(grep_prune_args) "${SERVER_INCLUDE_ARGS[@]}" 2>/dev/null | head -1)"
-  if [[ -n "$hit" ]]; then
+  hits="$(grep -rlE "$ai_pat" "$SERVER_DIR" $(grep_prune_args) "${SERVER_INCLUDE_ARGS[@]}" 2>/dev/null)"
+  [[ -z "$hits" ]] && continue
+  while IFS= read -r cand; do
+    [[ -z "$cand" ]] && continue
+    path_is_excluded "$cand" && continue
     AI_PROVIDER="$ai_name"
-    AI_SIG_FILE="$hit"
-    break
-  fi
+    AI_SIG_FILE="$cand"
+    break 2
+  done <<EOF_HITS
+$hits
+EOF_HITS
 done < "$PROVIDERS_FILE"
 
 emit_no_signal_note() {
@@ -175,19 +184,37 @@ fi
 # --- signal B: client-side UI disclosure detection ---------------------------
 CLIENT_EVIDENCE=""
 # shellcheck disable=SC2086
-b_hit="$(grep -rniE "\"[^\"]*${AI_PROVIDER}[^\"]*\"" "$CLIENT_DIR" $(grep_prune_args) "${CLIENT_INCLUDE_ARGS[@]}" 2>/dev/null \
-  | grep -v '://' | head -1)"
-if [[ -n "$b_hit" ]]; then
-  CLIENT_EVIDENCE="${b_hit%%:*}:$(printf '%s' "$b_hit" | cut -d: -f2)"
-else
+b_hits="$(grep -rniE "\"[^\"]*${AI_PROVIDER}[^\"]*\"" "$CLIENT_DIR" $(grep_prune_args) "${CLIENT_INCLUDE_ARGS[@]}" 2>/dev/null \
+  | grep -v '://')"
+if [[ -n "$b_hits" ]]; then
+  while IFS= read -r b_line; do
+    [[ -z "$b_line" ]] && continue
+    b_file="${b_line%%:*}"
+    path_is_excluded "$b_file" && continue
+    CLIENT_EVIDENCE="${b_file}:$(printf '%s' "$b_line" | cut -d: -f2)"
+    break
+  done <<EOF_HITS
+$b_hits
+EOF_HITS
+fi
+if [[ -z "$CLIENT_EVIDENCE" ]]; then
   # shellcheck disable=SC2086
-  xc_hit="$(grep -rliE "$AI_PROVIDER" --include=*.xcstrings $(grep_prune_args) "$CLIENT_DIR" 2>/dev/null | head -1)"
-  [[ -n "$xc_hit" ]] && CLIENT_EVIDENCE="${xc_hit}:1"
+  xc_hits="$(grep -rliE "$AI_PROVIDER" --include=*.xcstrings $(grep_prune_args) "$CLIENT_DIR" 2>/dev/null)"
+  if [[ -n "$xc_hits" ]]; then
+    while IFS= read -r xc_file; do
+      [[ -z "$xc_file" ]] && continue
+      path_is_excluded "$xc_file" && continue
+      CLIENT_EVIDENCE="${xc_file}:1"
+      break
+    done <<EOF_HITS
+$xc_hits
+EOF_HITS
+  fi
 fi
 
 # --- signal C: policy document disclosure detection --------------------------
 POLICY_EVIDENCE=""
-if [[ -n "$POLICY_FILE" ]]; then
+if [[ -n "$POLICY_FILE" ]] && ! path_is_excluded "$POLICY_FILE"; then
   # 1) Segment the document into block/sentence-scoped lines: break at
   #    block-level closing tags and <br>, strip remaining tags, then split on
   #    the Japanese sentence terminator so "same block" in the spec (2-2,
