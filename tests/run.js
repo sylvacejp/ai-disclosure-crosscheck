@@ -124,7 +124,9 @@ test('signal A + client discloses via .xcstrings only: PASS', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 3. Signal A + no B + policy discloses -> WARN (N14's flagship new case).
+// 3. Signal A + no B + policy discloses -> WARN (the flagship case this
+//    tool exists to catch: policy-only disclosure of a server-side call
+//    that a client-only scanner would never see).
 // ---------------------------------------------------------------------------
 test('signal A + no client disclosure + policy discloses: WARN, exit 0 by default', () => {
   const r = runScan([

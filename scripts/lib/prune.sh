@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # prune.sh — shared exclusion lists for find/grep, plus the language-scope
-# include filters. Reimplemented independently for this tool (not copied from
-# appstore-precheck's scan.sh — see the N14 spec section 4-2 "参照して再実装"
-# design decision): same idea (skip vendored/build output, scope by
-# extension), own array contents sized to this tool's two-sided scan.
+# include filters. Reimplemented independently for this tool (not copied
+# from appstore-precheck's scan.sh — same idea of skipping vendored/build
+# output and scoping by extension, but its own array contents, sized to
+# this tool's two-sided scan).
 
 # Directories never worth scanning on either side (vendored deps, build
 # output, VCS metadata). Extended by --precheck-ignore path-globs at runtime

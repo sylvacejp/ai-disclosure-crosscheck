@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 # scan.sh — ai-disclosure-crosscheck core scanner.
 #
-# Implements the 3-signal cross-check defined in
-# biz-dev/initiatives/n14-cross-repo-ai-disclosure-linter-spec-2026-09.md
-# section 2: signal A (server-side AI provider call), signal B (client-side
-# UI disclosure of the provider name) and signal C (public policy document
-# disclosure), reconciled through the PASS/WARN/FAIL matrix in section 2-3.
+# Implements a 3-signal cross-check: signal A (server-side AI provider
+# call), signal B (client-side UI disclosure of the provider name) and
+# signal C (public policy document disclosure), reconciled through the
+# PASS/WARN/FAIL matrix documented in the README.
 #
 # Requirements: bash, grep, find only (spec 3-5) — no jq/python3/node
 # dependency for the core scan. bin/cli.js is a thin npx wrapper around this
