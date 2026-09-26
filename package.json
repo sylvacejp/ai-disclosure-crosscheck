@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "description": "Cross-repo AI disclosure linter: cross-checks a server-side AI API call against client UI disclosure and public policy disclosure of the provider name, and reports PASS/WARN/FAIL where a single-repo, client-only scanner cannot.",
   "license": "MIT",
-  "author": "13stylejp",
+  "author": "sylvacejp",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/13stylejp/ai-disclosure-crosscheck.git"
+    "url": "git+https://github.com/sylvacejp/ai-disclosure-crosscheck.git"
   },
-  "homepage": "https://github.com/13stylejp/ai-disclosure-crosscheck#readme",
+  "homepage": "https://github.com/sylvacejp/ai-disclosure-crosscheck#readme",
   "bugs": {
-    "url": "https://github.com/13stylejp/ai-disclosure-crosscheck/issues"
+    "url": "https://github.com/sylvacejp/ai-disclosure-crosscheck/issues"
   },
   "bin": {
     "ai-disclosure-crosscheck": "bin/cli.js"
