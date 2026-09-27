@@ -106,6 +106,65 @@ SUMMARY: fail=0 warn=1 pass=0 suppressed=0
 }
 ```
 
+## GitHub Actions
+
+`ai-disclosure-crosscheck` ships a composite Action (`action.yml`) that runs
+`scripts/scan.sh` directly — no `npm install`, no Node.js setup step, no
+network access. It's a thin CI wrapper around the same bash/grep/find scanner
+described above.
+
+```yaml
+- name: AI disclosure crosscheck
+  uses: sylvacejp/ai-disclosure-crosscheck@v0.1.0
+  with:
+    client-dir: ios/App
+    server-dir: backend
+    policy-file: legal/privacy-policy.html
+    format: json          # optional, default: text
+    fail-on: fail          # optional, default: fail
+    # config: .ai-disclosure-crosscheck.json   # optional
+```
+
+The step fails (non-zero exit) exactly when the CLI itself would exit 1 for
+the given `fail-on` level, so no extra `if:` logic is needed to gate a job on
+the result.
+
+### Action inputs
+
+| Input | Meaning |
+|---|---|
+| `client-dir` | Client/UI source directory (required) |
+| `server-dir` | Server source directory to scan for AI API calls (required) |
+| `policy-file` | Public privacy-policy document, optional but recommended |
+| `format` | `text` (default) or `json` |
+| `fail-on` | `warn` or `fail` (default `fail`) |
+| `config` | Path to a `.ai-disclosure-crosscheck.json` config file |
+
+### Action outputs
+
+| Output | Meaning |
+|---|---|
+| `result` | Full stdout of the scan, in the requested `format` |
+| `verdict` | Parsed `PASS`/`WARN`/`FAIL` — only populated when `format: json` |
+
+Example reading the outputs in a later step:
+
+```yaml
+- name: AI disclosure crosscheck
+  id: crosscheck
+  uses: sylvacejp/ai-disclosure-crosscheck@v0.1.0
+  with:
+    client-dir: ios/App
+    server-dir: backend
+    policy-file: legal/privacy-policy.html
+    format: json
+    fail-on: warn
+
+- name: Show verdict
+  if: always()
+  run: echo "verdict was ${{ steps.crosscheck.outputs.verdict }}"
+```
+
 ### Options
 
 | Flag | Meaning |

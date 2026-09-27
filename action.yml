@@ -1,0 +1,88 @@
+name: 'AI Disclosure Crosscheck'
+description: >-
+  Cross-repo AI disclosure linter: checks whether a server-side call to an
+  external AI API (OpenAI, Anthropic, Gemini, Mistral, and others) is
+  disclosed to the user in the client UI or the public privacy policy,
+  reporting PASS/WARN/FAIL where a single-repo, client-only scanner cannot.
+author: 'sylvacejp'
+
+branding:
+  icon: 'shield'
+  color: 'purple'
+
+inputs:
+  client-dir:
+    description: 'Client/UI source directory to scan for provider-naming disclosure strings.'
+    required: true
+  server-dir:
+    description: 'Server source directory to scan for AI provider API calls.'
+    required: true
+  policy-file:
+    description: 'Public privacy-policy document (HTML or Markdown). Optional but strongly recommended.'
+    required: false
+    default: ''
+  format:
+    description: "Output format: 'text' or 'json'. Set 'json' to also get the parsed verdict output."
+    required: false
+    default: 'text'
+  fail-on:
+    description: "Severity that fails the step: 'warn' or 'fail'."
+    required: false
+    default: 'fail'
+  config:
+    description: 'Path to a .ai-disclosure-crosscheck.json config file (auto-detected in the workspace root if omitted).'
+    required: false
+    default: ''
+
+outputs:
+  result:
+    description: 'Full stdout of the scan, in the format requested by the format input.'
+    value: ${{ steps.scan.outputs.result }}
+  verdict:
+    description: >-
+      Parsed verdict (PASS, WARN, or FAIL) when format is 'json' and the rule
+      fired. Empty when format is 'text' or when no server-side AI call was
+      detected.
+    value: ${{ steps.scan.outputs.verdict }}
+
+runs:
+  using: 'composite'
+  steps:
+    - id: scan
+      shell: bash
+      run: |
+        set +e
+
+        args=(
+          --client-dir "${{ inputs.client-dir }}"
+          --server-dir "${{ inputs.server-dir }}"
+          --format "${{ inputs.format }}"
+          --fail-on "${{ inputs.fail-on }}"
+        )
+        if [[ -n "${{ inputs.policy-file }}" ]]; then
+          args+=(--policy-file "${{ inputs.policy-file }}")
+        fi
+        if [[ -n "${{ inputs.config }}" ]]; then
+          args+=(--config "${{ inputs.config }}")
+        fi
+
+        output="$(bash "${{ github.action_path }}/scripts/scan.sh" "${args[@]}" 2>&1)"
+        status=$?
+
+        printf '%s\n' "$output"
+
+        delim="AI_DISCLOSURE_CROSSCHECK_EOF_$$"
+        {
+          echo "result<<$delim"
+          printf '%s\n' "$output"
+          echo "$delim"
+        } >> "$GITHUB_OUTPUT"
+
+        if [[ "${{ inputs.format }}" == "json" ]]; then
+          verdict="$(printf '%s' "$output" \
+            | grep -oE '"verdict"[[:space:]]*:[[:space:]]*"[A-Z]*"' \
+            | head -1 | sed -E 's/.*"([A-Z]*)"$/\1/')"
+          echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+        fi
+
+        exit "$status"

@@ -88,6 +88,60 @@ SUMMARY: fail=0 warn=1 pass=0 suppressed=0
 }
 ```
 
+## GitHub Actions
+
+`ai-disclosure-crosscheck`は、composite actionとして`action.yml`を同梱しています。`scripts/scan.sh`を直接呼び出すだけで、`npm install`もNode.jsのセットアップステップもネットワークアクセスも不要です。上述のbash/grep/findベースのスキャナーをそのままCIで使うための薄いラッパーです。
+
+```yaml
+- name: AI disclosure crosscheck
+  uses: sylvacejp/ai-disclosure-crosscheck@v0.1.0
+  with:
+    client-dir: ios/App
+    server-dir: backend
+    policy-file: legal/privacy-policy.html
+    format: json          # 省略可、デフォルト: text
+    fail-on: fail          # 省略可、デフォルト: fail
+    # config: .ai-disclosure-crosscheck.json   # 省略可
+```
+
+このステップは、CLI自体が指定した`fail-on`レベルで終了コード1を返すのと全く同じ条件で失敗します。そのため、結果でジョブをゲートするために追加の`if:`条件は不要です。
+
+### Actionの入力
+
+| 入力 | 説明 |
+|---|---|
+| `client-dir` | クライアント/UI側のソースディレクトリ（必須） |
+| `server-dir` | AI API呼び出しを検出するサーバー側ソースディレクトリ（必須） |
+| `policy-file` | 公開プライバシーポリシー文書。省略可だが推奨 |
+| `format` | `text`（デフォルト）または`json` |
+| `fail-on` | `warn`または`fail`（デフォルト`fail`） |
+| `config` | `.ai-disclosure-crosscheck.json`設定ファイルへのパス |
+
+### Actionの出力
+
+| 出力 | 説明 |
+|---|---|
+| `result` | 指定した`format`でのスキャン結果（stdout全体） |
+| `verdict` | パース済みの`PASS`/`WARN`/`FAIL`——`format: json`のときのみ値が入る |
+
+後続ステップで出力を読み取る例。
+
+```yaml
+- name: AI disclosure crosscheck
+  id: crosscheck
+  uses: sylvacejp/ai-disclosure-crosscheck@v0.1.0
+  with:
+    client-dir: ios/App
+    server-dir: backend
+    policy-file: legal/privacy-policy.html
+    format: json
+    fail-on: warn
+
+- name: Show verdict
+  if: always()
+  run: echo "verdict was ${{ steps.crosscheck.outputs.verdict }}"
+```
+
 ### オプション
 
 | フラグ | 説明 |
